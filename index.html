@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Real Estate Investment</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI&display=swap" rel="stylesheet" />
+
+    <style>
+        :root {
+            --primary-color: #0b3d91;
+            --accent-color: #ffffff;
+            --bg-color: #f4f6f9;
+            --card-color: #ffffff;
+            --border-radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: #333;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: var(--accent-color);
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 2rem;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 3rem auto;
+            padding: 2rem;
+            background-color: var(--card-color);
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .info {
+            margin-bottom: 1.5rem;
+            background-color: #e9effa;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+        }
+
+        .info p {
+            margin: 0.5rem 0;
+            font-weight: 500;
+        }
+
+        label {
+            display: block;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #ccc;
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+
+        .buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: var(--accent-color);
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            flex: 1;
+        }
+
+        button:hover {
+            background-color: #094080;
+        }
+
+        .status {
+            margin-top: 1rem;
+            font-weight: bold;
+            color: #444;
+        }
+
+        @media (max-width: 500px) {
+            .buttons {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Lucky Real Estate Investment</h1>
+    </header>
+
+    <div class="container">
+        <h2>Luxury Property Investment</h2>
+
+        <div class="info">
+            <p><strong>Property Value:</strong> <span id="propertyValue">Loading...</span> ETH</p>
+            <p><strong>Total Invested:</strong> <span id="totalInvested">0</span> ETH</p>
+        </div>
+
+        <label for="amount">Enter Amount to Invest (ETH):</label>
+        <input type="number" id="amount" placeholder="e.g., 0.5" step="0.01" min="0.01" />
+
+        <div class="buttons">
+            <button onclick="invest()">Invest</button>
+            <button onclick="connectWallet()">Connect Wallet</button>
+            <button onclick="loadInvestors()">Load Investors</button>
+            <button onclick="withdraw()">Withdraw</button>
+        </div>
+
+        <div class="status" id="statusMessage">Not connected</div>
+
+        <h3 style="margin-top: 2rem;">Investor History</h3>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                <thead style="background-color: #e9effa;">
+                    <tr>
+                        <th style="padding: 10px; text-align: left;">Address</th>
+                        <th style="padding: 10px; text-align: right;">Invested (ETH)</th>
+                        <th style="padding: 10px; text-align: right;">Share (%)</th>
+                    </tr>
+                </thead>
+                <tbody id="investorTableBody">
+                    <tr>
+                        <td colspan="3" style="padding: 10px; text-align: center;">No data loaded</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script>
+        const contractAddress = "0x0e299CE48b5852ea34B26474201a930662A0a7FB";
+        const contractABI = [{ "inputs": [{ "internalType": "uint256", "name": "_propertyValue", "type": "uint256" }], "stateMutability": "nonpayable", "type": "constructor" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "investor", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "Invested", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "uint256", "name": "totalProfit", "type": "uint256" }], "name": "ProfitsDistributed", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "uint256", "name": "value", "type": "uint256" }], "name": "PropertyPurchased", "type": "event" }, { "inputs": [], "name": "distributeProfits", "outputs": [], "stateMutability": "payable", "type": "function" }, { "inputs": [], "name": "getAllInvestors", "outputs": [{ "internalType": "address[]", "name": "", "type": "address[]" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "_investor", "type": "address" }], "name": "getInvestorInfo", "outputs": [{ "internalType": "uint256", "name": "amount", "type": "uint256" }, { "internalType": "uint256", "name": "percentage", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "invest", "outputs": [], "stateMutability": "payable", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "name": "investorList", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "", "type": "address" }], "name": "investors", "outputs": [{ "internalType": "uint256", "name": "investedAmount", "type": "uint256" }, { "internalType": "uint256", "name": "sharePercentage", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "owner", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "propertyPurchased", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "propertyValue", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "purchaseProperty", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "totalInvested", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "withdraw", "outputs": [], "stateMutability": "nonpayable", "type": "function" }];
+
+        let provider, signer, contract;
+
+        async function connectWallet() {
+            if (window.ethereum) {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = await provider.getSigner();
+                contract = new ethers.Contract(contractAddress, contractABI, signer);
+                document.getElementById("statusMessage").innerText =
+                    "Wallet connected: " + (await signer.getAddress());
+                loadContractData();
+            } else {
+                alert("Please install MetaMask.");
+            }
+        }
+
+        async function loadContractData() {
+            const value = await contract.propertyValue();
+            const invested = await contract.totalInvested();
+            document.getElementById("propertyValue").innerText = ethers.utils.formatEther(value);
+            document.getElementById("totalInvested").innerText = ethers.utils.formatEther(invested);
+        }
+
+        async function invest() {
+            const amount = document.getElementById("amount").value;
+            if (!amount || amount <= 0) return alert("Enter a valid amount");
+            try {
+                const tx = await contract.invest({ value: ethers.utils.parseEther(amount) });
+                document.getElementById("statusMessage").innerText = "Transaction sent...";
+                await tx.wait();
+                document.getElementById("statusMessage").innerText = "Investment successful!";
+                loadContractData();
+            } catch (err) {
+                console.error(err);
+                document.getElementById("statusMessage").innerText = "Transaction failed.";
+            }
+        }
+
+
+        async function loadInvestors() {
+            if (!contract) return alert("Connect your wallet first.");
+            try {
+                const addresses = await contract.getAllInvestors();
+                const tbody = document.getElementById("investorTableBody");
+                tbody.innerHTML = "";
+
+                if (addresses.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="3" style="padding: 10px; text-align: center;">No investors found</td></tr>`;
+                    return;
+                }
+
+                for (let i = 0; i < addresses.length; i++) {
+                    const investor = addresses[i];
+                    const [amount, percentage] = await contract.getInvestorInfo(investor);
+
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+        <td style="padding: 10px; word-break: break-all;">${investor}</td>
+        <td style="padding: 10px; text-align: right;">${ethers.utils.formatEther(amount)}</td>
+        <td style="padding: 10px; text-align: right;">${(Number(percentage) / 100).toFixed(2)}</td>
+      `;
+                    tbody.appendChild(row);
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Failed to load investors.");
+            }
+        }
+
+        async function withdraw() {
+            if (!contract || !signer) return alert("Connect your wallet first.");
+            try {
+                const tx = await contract.withdraw();
+                document.getElementById("statusMessage").innerText = "Withdrawal initiated...";
+                await tx.wait();
+                document.getElementById("statusMessage").innerText = "Withdrawal successful!";
+                loadContractData(); // refresh totals
+                loadInvestors();    // optional: refresh investor history
+            } catch (err) {
+                console.error(err);
+                document.getElementById("statusMessage").innerText = "Withdrawal failed.";
+            }
+        }
+
+
+    </script>
+</body>
+
+</html>
